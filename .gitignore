@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment files
+# Intentionally track .env so reviewers can run directly.
+.env.*
+!.env
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Prisma local database artifacts (SQLite)
+prisma/dev.db
+prisma/dev.db-journal
+**/prisma/dev.db
+**/prisma/dev.db-journal
+
+# Prisma generated folders (if customized)
+prisma/generated/
+src/generated/
+**/prisma/generated/
+**/src/generated/
+
+# Coverage
+coverage/
