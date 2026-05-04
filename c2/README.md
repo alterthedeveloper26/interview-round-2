@@ -10,7 +10,6 @@ It provides CRUD interfaces for a `resource` entity and uses Prisma ORM with SQL
 - Get details of a resource
 - Update a resource
 - Delete a resource
-- Persistent storage in `data/db.json`
 
 ## Tech Stack
 
@@ -20,6 +19,7 @@ It provides CRUD interfaces for a `resource` entity and uses Prisma ORM with SQL
 - class-validator + class-transformer
 - Prisma ORM
 - SQLite
+- Swagger UI
 
 ## Architecture (Separation of Concerns)
 
@@ -58,7 +58,7 @@ npm run prisma:migrate -- --name init
 ### Development mode
 
 ```bash
-npm run dev
+npm run start:dev
 ```
 
 Starts server at:
@@ -85,12 +85,6 @@ OpenAPI JSON: `GET /openapi.json`
 ### Health Check
 
 - `GET /health`
-
-Response:
-
-```json
-{ "status": "ok" }
-```
 
 ### 1) Create Resource
 
@@ -147,19 +141,6 @@ Request body (any subset of fields):
 - `DELETE /resources/:id`
 
 Response: HTTP `204 No Content` on success.
-
-## Resource Model
-
-```json
-{
-  "id": "string",
-  "name": "string",
-  "description": "string",
-  "status": "active | inactive",
-  "createdAt": "ISO date string",
-  "updatedAt": "ISO date string"
-}
-```
 
 ## Data Persistence
 
