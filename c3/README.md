@@ -188,9 +188,26 @@ sequenceDiagram
 
 ## Additional Comments for Improvement
 
-- Add Redis sorted-set cache for leaderboard reads; keep DB as source of truth.
-- Introduce background reconciliation job to detect score drift/anomalies.
-- Add anti-cheat heuristics (impossible action frequency, bot-like patterns).
-- Add integration tests for idempotency and concurrent score updates.
-- Version the API (`/v1`) from day one for safer future changes.
-- Define explicit SLOs and alerts (error rate, stream disconnect rate, update lag).
+1. **Introduce a read-optimized leaderboard cache (Redis sorted set).**  
+   Use Redis as the first read layer for top-10 leaderboard queries to reduce database load and improve latency under high traffic. Keep the relational database as the source of truth and update Redis immediately after successful score transactions. Add fallback logic so if Redis is unavailable, the API can still serve leaderboard reads from the database.
+
+2. **Harden idempotency and replay protection beyond a single request.**  
+   Persist `idempotencyKey` with a TTL policy and make uniqueness scoped by user and action type, not only globally. Return a deterministic response for duplicate idempotent requests so retried client calls are safe and predictable. Consider storing a hash of request payload fields to detect suspicious reuse of a key with altered input.
+
+3. **Add asynchronous reconciliation and anomaly detection jobs.**  
+   Run scheduled jobs that recompute total scores from `score_events` and compare against `scores.total_score`. Flag and quarantine inconsistencies for review instead of silently correcting them. This protects against bugs, partial failures, and data corruption while producing an auditable trail.
+
+4. **Formalize anti-cheat policy and enforcement tiers.**  
+   Define concrete detection rules (for example: max actions per minute, impossible score growth, repeated token signatures, unusual IP/device switching). Separate responses by severity: soft throttle, temporary block, or permanent ban trigger. Emit structured fraud signals to a separate stream/topic for security review tools.
+
+5. **Add robust concurrency and failure-mode testing.**  
+   Include integration tests for concurrent score increments on the same user, duplicate `idempotencyKey` races, and real-time stream fanout during heavy write traffic. Add chaos scenarios such as DB timeout during transaction, cache write failure after DB commit, and realtime broker disconnect. Validate invariants such as non-negative score and no double-counting.
+
+6. **Define service-level objectives (SLOs) and operational alerts early.**  
+   Track p50/p95/p99 latency for increment and leaderboard endpoints, real-time publish delay, stream disconnect rate, and percentage of failed action validations. Set alert thresholds with clear runbooks (who responds, expected mitigation, escalation path). This makes the module production-ready instead of only feature-complete.
+
+7. **Plan versioning and compatibility strategy for clients.**  
+   Keep `/v1` in paths and define deprecation policy (minimum support window, sunset headers, migration notes). For live update payloads, include schema version fields so clients can safely evolve. Publish contract changes with examples before deployment to prevent breaking app releases.
+
+8. **Strengthen observability with traceable score mutation history.**  
+   Require a correlation ID on every write request and propagate it through logs, DB event records, and publish events. This enables end-to-end tracing from user action to leaderboard update and simplifies incident debugging. Add dashboards for mutation volume, rejected actions, fraud flags, and top affected users.
